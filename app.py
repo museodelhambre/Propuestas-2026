@@ -122,7 +122,7 @@ else:
     # --- SIDEBAR: FILTROS ---
     st.sidebar.header("🎯 Filtrar Resultados")
     
-    ejes = sorted(df['Eje'].dropna().unique())
+    ejes = sorted(df['Eje temático'].dropna().unique())
     eje_sel = st.sidebar.multiselect("Eje temático", ejes)
     
     disciplinas = sorted(df['Disciplina'].dropna().unique())
