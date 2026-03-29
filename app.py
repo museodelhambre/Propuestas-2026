@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Estilo CSS (Tu diseño original intacto)
+# 2. Estilo CSS (Tu diseño original)
 st.markdown("""
     <style>
     .main { background-color: #f8fafc; }
@@ -63,11 +63,11 @@ def load_data():
     if not os.path.exists(file_path): return None
     
     try:
-        # Leemos el CSV tratando de ignorar errores de encoding
+        # Leemos el CSV con encoding seguro para acentos
         df = pd.read_csv(file_path, encoding='utf-8-sig')
-        df.columns = df.columns.str.strip() # Limpiar espacios
+        df.columns = df.columns.str.strip() 
         
-        # BUSCADOR INTELIGENTE DE COLUMNAS (Para evitar el KeyError)
+        # Mapeo inteligente de columnas
         new_cols = {}
         for col in df.columns:
             c = col.lower()
@@ -81,14 +81,16 @@ def load_data():
             
         df = df.rename(columns=new_cols)
         
-        # Verificar que las columnas críticas existan, si no, crearlas vacías para que no explote
+        # Asegurar columnas críticas y rellenar vacíos para evitar errores visuales
         for critical in ['Artista', 'Propuesta', 'Eje', 'Disciplina', 'Descripción', 'Mail', 'WhatsApp']:
             if critical not in df.columns:
                 df[critical] = "No disponible"
+            else:
+                df[critical] = df[critical].fillna("No disponible").astype(str)
                 
         return df
     except Exception as e:
-        st.error(f"Error técnico: {e}")
+        st.error(f"Error técnico al cargar: {e}")
         return None
 
 # 4. Ejecución de la App
@@ -96,39 +98,39 @@ df = load_data()
 
 if df is None:
     st.error("### ❌ No se encontró 'propuestas.csv'")
-    st.info("Asegúrate de que el nombre del archivo en GitHub sea exactamente ese.")
 else:
-    # --- FILTROS SIDEBAR ---
+    # --- FILTROS SIDEBAR (CORREGIDOS PARA EVITAR TYPEERROR) ---
     st.sidebar.header("🎯 Filtros")
     
-    ejes = sorted(df['Eje'].unique().tolist())
-    eje_sel = st.sidebar.multiselect("Eje Temático", ejes)
+    # Limpiamos y ordenamos asegurando que todo sea texto (str)
+    ejes_lista = sorted([x for x in df['Eje'].unique() if x != "No disponible"])
+    eje_sel = st.sidebar.multiselect("Eje Temático", ejes_lista)
     
-    discs = sorted(df['Disciplina'].unique().tolist())
-    disc_sel = st.sidebar.multiselect("Disciplina", discs)
+    discs_lista = sorted([x for x in df['Disciplina'].unique() if x != "No disponible"])
+    disc_sel = st.sidebar.multiselect("Disciplina", discs_lista)
     
     # --- CUERPO PRINCIPAL ---
     st.title("🎨 Propuestas Culturales 2026")
-    search = st.text_input("🔍 Buscar artista o propuesta...", placeholder="Ej: Museo...")
+    search = st.text_input("🔍 Buscar artista o propuesta...", placeholder="Escribe aquí...")
 
     # Filtrado lógico
     f_df = df.copy()
     if eje_sel: f_df = f_df[f_df['Eje'].isin(eje_sel)]
     if disc_sel: f_df = f_df[f_df['Disciplina'].isin(disc_sel)]
     if search:
-        f_df = f_df[f_df['Artista'].astype(str).str.contains(search, case=False) | 
-                    f_df['Propuesta'].astype(str).str.contains(search, case=False)]
+        f_df = f_df[f_df['Artista'].str.contains(search, case=False, na=False) | 
+                    f_df['Propuesta'].str.contains(search, case=False, na=False)]
 
     # --- RENDERIZADO ---
     if f_df.empty:
         st.info("No hay resultados para esta búsqueda.")
     else:
-        st.write(f"Viendo {len(f_df)} propuestas")
+        st.write(f"Viendo *{len(f_df)}* propuestas")
         cols = st.columns(3)
         
         for i, row in f_df.reset_index().iterrows():
-            # Limpiar WhatsApp
-            ws = str(row['WhatsApp']).replace('+', '').replace(' ', '').split('.')[0]
+            # Limpiar WhatsApp (Quitamos decimales si los hay)
+            ws = row['WhatsApp'].split('.')[0].replace('+', '').replace(' ', '')
             
             with cols[i % 3]:
                 st.markdown(f"""
@@ -148,4 +150,4 @@ else:
                 """, unsafe_allow_html=True)
 
 st.markdown("---")
-st.caption("Museo del Hambre - 2026")
+st.caption("Museo del Hambre - Plataforma de Gestión 2026")
