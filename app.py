@@ -23,7 +23,7 @@ st.markdown("""
         margin-bottom: 20px;
         display: flex;
         flex-direction: column;
-        min-height: 650px;
+        min-height: 600px;
     }
     .title { color: #1a73e8; font-size: 22px; font-weight: 600; margin-bottom: 4px; }
     .artist { color: #5f6368; font-size: 16px; font-weight: 500; margin-bottom: 12px; }
@@ -52,9 +52,8 @@ st.markdown("""
 
     .data-label { font-size: 11px; font-weight: 700; color: #70757a; text-transform: uppercase; margin-top: 8px; }
     
-    /* TIPOGRAFIA AGRANDADA PARA CONTACTOS */
     .data-value-contact { 
-        font-size: 20px; /* Más grande aún */
+        font-size: 20px; 
         font-weight: 700; 
         color: #1e293b; 
         margin-bottom: 12px;
@@ -62,7 +61,6 @@ st.markdown("""
     }
     .data-value { font-size: 14px; color: #202124; margin-bottom: 5px; }
 
-    /* BOTONES DE REFERENCIA */
     .ref-container { display: flex; gap: 8px; margin-top: 10px; margin-bottom: 15px; flex-wrap: wrap; }
     .ref-btn {
         padding: 8px 14px;
@@ -113,13 +111,23 @@ def load_data():
 df = load_data()
 
 if df is not None:
-    st.sidebar.header("🎯 Filtros")
-    eje_sel = st.sidebar.multiselect("Eje Temático", sorted([x for x in df['Eje'].unique() if x != ""]))
-    disc_sel = st.sidebar.multiselect("Disciplina", sorted([x for x in df['Disciplina'].unique() if x != ""]))
-    
+    # --- TÍTULO ---
     st.title("🎨 Catálogo de Propuestas 2026")
+    
+    # --- FILTROS EN EL CUERPO PRINCIPAL (VISIBLES EN MÓVIL) ---
+    st.markdown("### 🎯 Filtrar propuestas")
+    col_f1, col_f2 = st.columns(2)
+    
+    with col_f1:
+        eje_sel = st.multiselect("Eje Temático", sorted([x for x in df['Eje'].unique() if x != ""]))
+    
+    with col_f2:
+        disc_sel = st.multiselect("Disciplina", sorted([x for x in df['Disciplina'].unique() if x != ""]))
+    
+    # --- BUSCADOR ---
     search = st.text_input("🔍 Buscar artista o propuesta...", placeholder="Escribe aquí...")
 
+    # Filtrado lógico
     f_df = df.copy()
     if eje_sel: f_df = f_df[f_df['Eje'].isin(eje_sel)]
     if disc_sel: f_df = f_df[f_df['Disciplina'].isin(disc_sel)]
@@ -130,6 +138,8 @@ if df is not None:
         st.info("No hay resultados.")
     else:
         st.write(f"Mostrando *{len(f_df)}* propuestas")
+        
+        # Grid de tarjetas
         cols = st.columns(3)
         
         for i, row in f_df.reset_index().iterrows():
@@ -143,7 +153,6 @@ if df is not None:
                     else:
                         refs_html += f'<span class="ref-btn ref-inactive">Ref {n} 🚫</span>'
 
-                # Construcción del HTML sin indentación al inicio para evitar el bloque de código
                 card_content = f"""
 <div class="card">
 <div class="title">{row['Propuesta']}</div>
@@ -168,7 +177,6 @@ if df is not None:
 <div class="data-value"><i>{row['Comentarios']}</i></div>
 </div>
 </div>"""
-                # Usamos st.markdown con unsafe_allow_html
                 st.markdown(textwrap.dedent(card_content), unsafe_allow_html=True)
 
 st.markdown("---")
