@@ -9,44 +9,41 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Estilo CSS (El diseño de Google AI que elegiste con ajustes para los datos)
+# 2. Estilo CSS (Estilo Google AI - Limpio y Moderno)
 st.markdown("""
-    <style>
-    /* Fondo general más claro, estilo Google */
-    .main {
-        background-color: #f0f4f8;
-    }
-    /* Tarjetas estilo 'Material Design' */
+<style>
+    .main { background-color: #f0f4f8; }
+    .stMarkdown { width: 100%; }
+    
     .card {
         background-color: #ffffff;
         padding: 24px;
         border-radius: 24px;
         border: 1px solid #dfe1e5;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         margin-bottom: 20px;
-        transition: all 0.3s cubic-bezier(.25,.8,.25,1);
         display: flex;
         flex-direction: column;
-        min-height: 480px; /* Un poco más alto para los datos extra */
+        min-height: 450px;
     }
-    .card:hover {
-        box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-    }
-    /* Títulos estilo Google */
+    
     .title {
         color: #1a73e8;
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        font-size: 19px;
+        font-family: 'Google Sans', Roboto, Arial, sans-serif;
+        font-size: 20px;
         font-weight: 600;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
     }
+    
     .artist {
         color: #5f6368;
         font-size: 15px;
         font-weight: 500;
         margin-bottom: 12px;
     }
-    /* Badges */
+
+    .badge-container { margin-bottom: 15px; }
+    
     .badge {
         display: inline-block;
         padding: 6px 12px;
@@ -54,48 +51,46 @@ st.markdown("""
         font-size: 11px;
         font-weight: 600;
         margin-right: 6px;
-        margin-bottom: 12px;
     }
+    
     .badge-eje { background-color: #e8f0fe; color: #1967d2; }
     .badge-disc { background-color: #f1f3f4; color: #3c4043; }
     
     .description {
         color: #3c4043;
-        font-size: 13.5px;
+        font-size: 14px;
         line-height: 1.6;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         flex-grow: 1;
     }
 
-    /* Estilo para los datos de contacto (No botones) */
-    .contact-info-box {
+    .contact-box {
         background-color: #f8f9fa;
-        padding: 15px;
+        padding: 16px;
         border-radius: 16px;
         border: 1px solid #eee;
-        margin-top: 10px;
     }
+
     .data-label {
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
         color: #70757a;
         text-transform: uppercase;
         margin-bottom: 2px;
     }
+
     .data-value {
         font-size: 13px;
         color: #202124;
         margin-bottom: 8px;
         word-break: break-all;
     }
-    .data-value a {
-        color: #1a73e8;
-        text-decoration: none;
-    }
-    </style>
+    
+    .data-value a { color: #1a73e8; text-decoration: none; }
+</style>
 """, unsafe_allow_html=True)
 
-# 3. Carga de datos robusta
+# 3. Carga de datos
 @st.cache_data
 def load_data():
     file_path = 'propuestas.csv'
@@ -104,7 +99,7 @@ def load_data():
         df = pd.read_csv(file_path, encoding='utf-8-sig')
         df.columns = df.columns.str.strip()
         
-        # Mapeo inteligente de columnas para evitar KeyErrors
+        # Mapeo de columnas
         new_cols = {}
         for col in df.columns:
             c = col.lower()
@@ -119,70 +114,60 @@ def load_data():
             
         df = df.rename(columns=new_cols)
         
-        # Aseguramos que todas las columnas existan y sean texto
+        # Completar faltantes
         for col in ['Artista', 'Propuesta', 'Eje', 'Disciplina', 'Descripción', 'Mail', 'WhatsApp', 'Referencia']:
-            if col not in df.columns:
-                df[col] = "No disponible"
-            else:
-                df[col] = df[col].fillna("No disponible").astype(str)
+            if col not in df.columns: df[col] = "No disponible"
+            df[col] = df[col].fillna("No disponible").astype(str)
         return df
-    except Exception as e:
-        st.error(f"Error cargando datos: {e}"); return None
+    except: return None
 
 df = load_data()
 
 if df is not None:
-    # --- FILTROS ---
+    # FILTROS
     st.sidebar.header("🎯 Filtros")
-    ejes_lista = sorted([x for x in df['Eje'].unique() if x != "No disponible"])
-    eje_sel = st.sidebar.multiselect("Eje Temático", ejes_lista)
-    
-    discs_lista = sorted([x for x in df['Disciplina'].unique() if x != "No disponible"])
-    disc_sel = st.sidebar.multiselect("Disciplina", discs_lista)
+    eje_sel = st.sidebar.multiselect("Eje Temático", sorted(df['Eje'].unique()))
+    disc_sel = st.sidebar.multiselect("Disciplina", sorted(df['Disciplina'].unique()))
     
     st.title("🎨 Catálogo de Propuestas 2026")
-    search = st.text_input("🔍 Buscar artista o propuesta...", placeholder="Ej: Museo...")
+    search = st.text_input("🔍 Buscar artista o propuesta...")
 
-    # Lógica de filtrado
+    # Filtrado
     f_df = df.copy()
     if eje_sel: f_df = f_df[f_df['Eje'].isin(eje_sel)]
     if disc_sel: f_df = f_df[f_df['Disciplina'].isin(disc_sel)]
     if search:
-        f_df = f_df[f_df['Artista'].str.contains(search, case=False) | 
-                    f_df['Propuesta'].str.contains(search, case=False)]
+        f_df = f_df[f_df['Artista'].str.contains(search, case=False) | f_df['Propuesta'].str.contains(search, case=False)]
 
-    # --- RENDERIZADO ---
+    # RENDERIZADO (Corregido para evitar el error visual de código)
     if f_df.empty:
-        st.info("No se encontraron resultados.")
+        st.info("No hay resultados.")
     else:
         st.write(f"Mostrando *{len(f_df)}* propuestas")
         cols = st.columns(3)
         
         for i, row in f_df.reset_index().iterrows():
             with cols[i % 3]:
-                st.markdown(f"""
-                    <div class="card">
-                        <div class="title">{row['Propuesta']}</div>
-                        <div class="artist">{row['Artista']}</div>
-                        <div>
-                            <span class="badge badge-eje">{row['Eje']}</span>
-                            <span class="badge badge-disc">{row['Disciplina']}</span>
-                        </div>
-                        
-                        <div class="description">{row['Descripción']}</div>
-                        
-                        <div class="contact-info-box">
-                            <div class="data-label">📍 Referencia</div>
-                            <div class="data-value"><a href="{row['Referencia']}" target="_blank">Abrir enlace</a></div>
-                            
-                            <div class="data-label">📧 Correo electrónico</div>
-                            <div class="data-value">{row['Mail']}</div>
-                            
-                            <div class="data-label">📱 WhatsApp / Teléfono</div>
-                            <div class="data-value">{row['WhatsApp']}</div>
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
+                # USAMOS HTML PURO SIN INDENTACIÓN PARA EVITAR EL FONDO OSCURO
+                card_html = f"""
+<div class="card">
+    <div class="title">{row['Propuesta']}</div>
+    <div class="artist">{row['Artista']}</div>
+    <div class="badge-container">
+        <span class="badge badge-eje">{row['Eje']}</span>
+        <span class="badge badge-disc">{row['Disciplina']}</span>
+    </div>
+    <div class="description">{row['Descripción']}</div>
+    <div class="contact-box">
+        <div class="data-label">📍 Referencia</div>
+        <div class="data-value"><a href="{row['Referencia']}" target="_blank">Abrir enlace</a></div>
+        <div class="data-label">📧 Correo</div>
+        <div class="data-value">{row['Mail']}</div>
+        <div class="data-label">📱 WhatsApp</div>
+        <div class="data-value">{row['WhatsApp']}</div>
+    </div>
+</div>"""
+                st.markdown(card_html, unsafe_allow_html=True)
 
 st.markdown("---")
-st.caption("Museo del Hambre - Plataforma de Gestión 2026")
+st.caption("Museo del Hambre - 2026")
