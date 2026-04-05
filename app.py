@@ -76,13 +76,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Carga de datos
-@st.cache_data
+# 3. Carga de datos desde Link RAW (Caché de 15 minutos)
+@st.cache_data(ttl=900)
 def load_data():
-    file_path = 'propuestas.csv'
-    if not os.path.exists(file_path): return None
+    url = "https://raw.githubusercontent.com/museodelhambre/Propuestas-2026/refs/heads/main/propuestas.csv"
     try:
-        df = pd.read_csv(file_path, encoding='utf-8-sig')
+        df = pd.read_csv(url, encoding='utf-8-sig')
         df.columns = df.columns.str.strip()
         
         mapping = {
@@ -106,7 +105,8 @@ def load_data():
             if col not in df.columns: df[col] = ""
             df[col] = df[col].fillna("").astype(str).str.strip()
         return df
-    except: return None
+    except:
+        return None
 
 df = load_data()
 
@@ -114,7 +114,7 @@ if df is not None:
     # --- TÍTULO ---
     st.title("🎨 Catálogo de Propuestas 2026")
     
-    # --- FILTROS EN EL CUERPO PRINCIPAL (VISIBLES EN MÓVIL) ---
+    # --- FILTROS ---
     st.markdown("### 🎯 Filtrar propuestas")
     col_f1, col_f2 = st.columns(2)
     
@@ -137,9 +137,9 @@ if df is not None:
     if f_df.empty:
         st.info("No hay resultados.")
     else:
-        st.write(f"Mostrando *{len(f_df)}* propuestas")
+        st.write(f"Mostrando {len(f_df)} propuestas")
         
-        # Grid de tarjetas
+        # Grid de tarjetas (3 columnas)
         cols = st.columns(3)
         
         for i, row in f_df.reset_index().iterrows():
@@ -153,31 +153,9 @@ if df is not None:
                     else:
                         refs_html += f'<span class="ref-btn ref-inactive">Ref {n} 🚫</span>'
 
-                card_content = f"""
-<div class="card">
-<div class="title">{row['Propuesta']}</div>
-<div class="artist">{row['Artista']}</div>
-<div class="badge-container">
-<span class="badge badge-eje">{row['Eje']}</span>
-<span class="badge badge-disc">{row['Disciplina']}</span>
-</div>
-<div class="description">{row['Descripción']}</div>
-<div class="data-label">📍 Referencias adjuntas:</div>
-<div class="ref-container">{refs_html}</div>
-<div class="contact-box">
-<div class="data-label">👤 Responsable</div>
-<div class="data-value">{row['Responsable']}</div>
-<div class="data-label">📧 Correo electrónico</div>
-<div class="data-value-contact">{row['Mail']}</div>
-<div class="data-label">📱 WhatsApp / Teléfono</div>
-<div class="data-value-contact">{row['WhatsApp']}</div>
-<div class="data-label">⏳ Disponibilidad</div>
-<div class="data-value">{row['Disponibilidad']}</div>
-<div class="data-label">💬 Comentarios</div>
-<div class="data-value"><i>{row['Comentarios']}</i></div>
-</div>
-</div>"""
-                st.markdown(textwrap.dedent(card_content), unsafe_allow_html=True)
+                # Contenido de la tarjeta en HTML compacto
+                card_content = f"""<div class="card"><div class="title">{row['Propuesta']}</div><div class="artist">{row['Artista']}</div><div class="badge-container"><span class="badge badge-eje">{row['Eje']}</span><span class="badge badge-disc">{row['Disciplina']}</span></div><div class="description">{row['Descripción']}</div><div class="data-label">📍 Referencias adjuntas:</div><div class="ref-container">{refs_html}</div><div class="contact-box"><div class="data-label">👤 Responsable</div><div class="data-value">{row['Responsable']}</div><div class="data-label">📧 Correo electrónico</div><div class="data-value-contact">{row['Mail']}</div><div class="data-label">📱 WhatsApp / Teléfono</div><div class="data-value-contact">{row['WhatsApp']}</div><div class="data-label">⏳ Disponibilidad</div><div class="data-value">{row['Disponibilidad']}</div><div class="data-label">💬 Comentarios</div><div class="data-value"><i>{row['Comentarios']}</i></div></div></div>"""
+                st.markdown(card_content, unsafe_allow_html=True)
 
 st.markdown("---")
 st.caption("Museo del Hambre - 2026")
