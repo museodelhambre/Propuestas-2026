@@ -10,4 +10,4 @@ jobs:
     steps:
       - name: Visitar la App
         # REEMPLAZA EL LINK DE ABAJO POR TU LINK DE STREAMLIT REAL
-        run: curl -I https://calendario2026-museodelhambre.streamlit.app
+        run: curl -I https://propuestas2026-museodelhambre.streamlit.app/
